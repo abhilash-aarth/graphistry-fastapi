@@ -12,5 +12,5 @@ Detailed steps to load project
 application will be running on uvicorn
 
 ## Development
-- update .env file with credentials of local or cloud neo4j DB
+- create and update neo4j_acc/.env file with credentials of local or cloud neo4j DB
 - initial routes are present in main.py. you may take it as a reference and create based on that.
