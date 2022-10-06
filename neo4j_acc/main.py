@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import json 
 import logging
+from neo4j.exceptions import ServiceUnavailable
 import sys
 
 
@@ -44,11 +45,11 @@ def countnode(label):
     results=session.run(q1,x)
     response = {"respose":[{"Name":row["name"],"count":row["count"]}for row in results]} 
     session.close()
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.DEBUG)
-    logging.getLogger("neo4j").addHandler(handler)
-    logging.getLogger("neo4j").setLevel(logging.DEBUG)
-    return response
-
+    try:
+        return response
+    except ServiceUnavailable as exception:
+            logging.error("{query} raised an error: \n {exception}".format(
+                query=q1, exception=exception))
+            raise
     # json_data = json.dumps(countnode(label).data())
     #return  JSON.dumps([row.data() for row in results])
