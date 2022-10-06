@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "neo4j-acc"
+version = "0.1.0"
+description = ""
+authors = ["Jagadeesh Garapati <jagadeesh.garapati.ext@nokia.com>"]
+readme = "README.md"
+packages = [{include = "neo4j"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.85.0"
+uvicorn = "^0.18.3"
+neo4j = "^5.0.1"
+python-dotenv = "^0.21.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
