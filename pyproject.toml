@@ -12,6 +12,8 @@ fastapi = "^0.85.0"
 uvicorn = "^0.18.3"
 neo4j = "^5.0.1"
 python-dotenv = "^0.21.0"
+geocoder = "^1.38.1"
+geopy = "^2.2.0"
 
 [build-system]
 requires = ["poetry-core"]
