@@ -8,7 +8,8 @@ Detailed steps to load project
     https://python-poetry.org/docs/#installation
 - run the command : poetry update
 - run the command : poetry shell
-- run the command : uvicorn neo4j_acc.main:app --reload
+- run the command : uvicorn neo4j_graphistry.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0 --port 7070
 application will be running on uvicorn
 
 ## Development
