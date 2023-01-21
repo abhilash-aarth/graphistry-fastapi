@@ -1,2 +1,7 @@
-neo4j_acc/.env
+app/.env
 .DS_Store
+app/__pycache__/
+.idea
+.ipynb_checkpoints
+poetry.lock
+log.txt
