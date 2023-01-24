@@ -38,10 +38,11 @@ origins = [
 
 # graphistry.register(api=3, username='jagadeesh_aarth', password='Prat2020')
 # graphistry.register(api=3, token=initial_one_hour_token)
-graphistry.register(api=3,personal_key_id='ZF79P0BIU7', personal_key_secret='II5NTKQQZGKK2VW5', protocol='https', server='hub.graphistry.com')
+graphistry.register(api=3,personal_key_id='5EH9DONAY5', personal_key_secret='W7LJ3BUDUI6EZ91U', protocol='https', server='hub.graphistry.com')
 # NEO4J={'uri':"neo4j+s://6bb63f78.databases.neo4j.io", 'auth':("neo4j", "mib9K3dAFRX_wBZ2BxfNY9LA2rzD7hsrRVkO4MpZc1U")}
 # NEO4J={'uri':uri, 'auth':(user, pwd)}
-NEO4J={'uri':"neo4j+s://7a396979.databases.neo4j.io", 'auth':("neo4j", "MyHTf2fSrN-KgLEPwJmuCw6Z1dcqGOITyyd5wCHpGZ0")}
+# NEO4J={'uri':"bolt://127.0.0.1:7687", 'auth':("neo4j", "Admin@123")}
+NEO4J={'uri':"bolt://neo4j_carlton:7687", 'auth':("neo4j", "Admin@123")}
 graphistry.register(bolt=NEO4J)
 
 
@@ -110,7 +111,8 @@ async def main_route():
 
 driver = GraphDatabase.driver(uri, auth=(user,pwd))
 @app.get("/runQuery")
-def countnode(cypherQuery):
+#TODO add input parameters 
+def queryGraphistry(cypherQuery="null"):
     try:
         query = 'MATCH (n1:Construct) return n1.name as name, n1.ConstructRole as ConstructRole'
         with driver.session() as session:
@@ -122,18 +124,26 @@ def countnode(cypherQuery):
         with driver.session() as session:
             result = session.run(query)
             edges_r=pd.DataFrame([r.data() for r in result])
-        graphistry.bind(source="n1", destination="n2",node="name").nodes(constructs).edges(edges_r).encode_point_icon('ConstructRole',
+        shareable_and_embeddable_url=graphistry.bind(source="n1", destination="n2",node="name").nodes(constructs).edges(edges_r).encode_point_icon('ConstructRole',
                   shape="circle",as_text=True,
                  categorical_mapping={
       'Moderator': 'MV', 
       'IndependentVariable': 'IV', 
       'Mediator': 'M',
-      'external_logo': ''},
+      'DependentVariable': 'DV'},
                 default_mapping="?"
-            ).plot()
+            ).plot(render=False)
+        query = urlsplit(shareable_and_embeddable_url).query
+        params = parse_qs(query) 
     except ServiceUnavailable as exception:
             logging.error("{query} raised an error: \n {exception}".format(
                 query=query, exception=exception))
             raise
     # return JSONResponse(content=json_compatible_item_data,headers=headers)
-    return "success"
+    return params['dataset']
+
+#TODO add functional blocks to give generate graphs for each scenario
+# scenarios:
+# 1 node
+# 2 nodes
+# 3 nodes
