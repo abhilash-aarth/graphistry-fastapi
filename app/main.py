@@ -27,7 +27,8 @@ load_dotenv()
 uri=os.getenv("uri")
 user=os.getenv("user")
 pwd=os.getenv("pwd")
-
+personal_key_id=os.getenv("personal_key_id")
+personal_key_secret=os.getenv("personal_key_secret")
 origins = [
     "http://localhost.tiangolo.com",
     "https://localhost.tiangolo.com",
@@ -37,7 +38,7 @@ origins = [
 
 
 
-graphistry.register(api=3,personal_key_id='5EH9DONAY5', personal_key_secret='W7LJ3BUDUI6EZ91U', protocol='https', server='hub.graphistry.com')
+graphistry.register(api=3,personal_key_id=personal_key_id, personal_key_secret=personal_key_secret, protocol='https', server='hub.graphistry.com')
 NEO4J={'uri':uri, 'auth':(user, pwd)}
 graphistry.register(bolt=NEO4J)
 
