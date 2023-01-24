@@ -36,13 +36,9 @@ origins = [
 ]
 
 
-# graphistry.register(api=3, username='jagadeesh_aarth', password='Prat2020')
-# graphistry.register(api=3, token=initial_one_hour_token)
+
 graphistry.register(api=3,personal_key_id='5EH9DONAY5', personal_key_secret='W7LJ3BUDUI6EZ91U', protocol='https', server='hub.graphistry.com')
-# NEO4J={'uri':"neo4j+s://6bb63f78.databases.neo4j.io", 'auth':("neo4j", "mib9K3dAFRX_wBZ2BxfNY9LA2rzD7hsrRVkO4MpZc1U")}
-# NEO4J={'uri':uri, 'auth':(user, pwd)}
-# NEO4J={'uri':"bolt://127.0.0.1:7687", 'auth':("neo4j", "Admin@123")}
-NEO4J={'uri':"bolt://neo4j_carlton:7687", 'auth':("neo4j", "Admin@123")}
+NEO4J={'uri':uri, 'auth':(user, pwd)}
 graphistry.register(bolt=NEO4J)
 
 
@@ -61,53 +57,6 @@ app.add_middleware(
 @app.get("/") 
 async def main_route():     
   return {"message": "Hey, Graphistry!!"}
-
-
-
-# @app.get("/runQuery")
-# def countnode(cypherQuery):
-#     try:
-
-#       e_df = pd.DataFrame({
-#           's': ['a', 'b', 'c', 'a', 'd', 'e'],
-#           'd': ['b', 'c', 'a', 'c', 'e', 'd'],
-#           'time': [datetime.datetime(1987, 10, 1), datetime.datetime(1987, 10, 2), datetime.datetime(1987, 10, 3),
-#                 datetime.datetime(1988, 10, 1), datetime.datetime(1988, 10, 2), datetime.datetime(1988, 10, 3)]
-#       })
-#       n_df = pd.DataFrame({
-#           'n': ['a', 'b', 'c', 'd', 'e'],
-#           'score': [ 0, 30, 50, 70, 90 ],
-#           'palette_color_int32': pd.Series(
-#               [0, 1, 2, 3, 4],
-#               dtype='int32'),
-#           'hex_color_int64': pd.Series(
-#               [0xFF000000, 0xFFFF0000, 0xFFFFFF00, 0x00FF0000, 0x0000FF00],
-#               dtype='int64'),
-#           'type': ['mac', 'macbook', 'mac', 'macbook', 'sheep']
-#       })
-#       g = graphistry.edges(e_df, 's', 'd').nodes(n_df, 'n')
-#       print(g._nodes['palette_color_int32'].dtype)
-
-#       g.addStyle(bg={'color': 'grey'}, fg={}, page={'title': 'My Graph'}, logo={'url':'https://cdn.pixabay.com/photo/2021/01/24/19/05/crane-5946169_1280.jpg'}).plot(layout='layout_igraph')
-#     except ServiceUnavailable as exception:
-#             logging.error("{query} raised an error: \n {exception}".format(
-#                 query=e_df, exception=exception))
-#             raise
-#     # return JSONResponse(content=json_compatible_item_data,headers=headers)
-#     return "success"
-    #   q1=cypherQuery
-
-    #   g = graphistry.cypher(q1)
-    #   shareable_and_embeddable_url=g.plot(render=False)
-    #   query = urlsplit(shareable_and_embeddable_url).query
-    #   print(query)
-    #   params = parse_qs(query)   
-    #   print(params)
-    # except ServiceUnavailable as exception:
-    #         logging.error("{query} raised an error: \n {exception}".format(
-    #             query=q1, exception=exception))
-    #         raise
-    # return params['dataset']
 
 driver = GraphDatabase.driver(uri, auth=(user,pwd))
 @app.get("/runQuery")
@@ -139,7 +88,6 @@ def queryGraphistry(cypherQuery="null"):
             logging.error("{query} raised an error: \n {exception}".format(
                 query=query, exception=exception))
             raise
-    # return JSONResponse(content=json_compatible_item_data,headers=headers)
     return params['dataset']
 
 #TODO add functional blocks to give generate graphs for each scenario
