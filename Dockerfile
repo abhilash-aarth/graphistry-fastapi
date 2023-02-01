@@ -29,7 +29,7 @@ RUN pip install --no-cache-dir --upgrade -r /graphistry-fastapi/requirements.txt
 COPY ./app /graphistry-fastapi/app
 
 # 
-# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
-RUN touch /graphistry-fastapi/log.txt
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+# RUN touch /graphistry-fastapi/log.txt
 
-CMD uvicorn app.main:app --host 0.0.0.0 --port 8001 >> /graphistry-fastapi/log.txt 2>&1
+# CMD uvicorn app.main:app --host 0.0.0.0 --port 8001 >> /graphistry-fastapi/log.txt 2>&1
