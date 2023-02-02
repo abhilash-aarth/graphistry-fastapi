@@ -1,42 +1,25 @@
-
-from pandas import DataFrame
-import datetime, pandas as pd
-import neo4j # just for testing
-from neo4j import GraphDatabase # for data loader
-import graphistry
-import os
-from dotenv import load_dotenv
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
-import logging
 import json
-from fastapi import FastAPI  
-from neo4j import GraphDatabase
-from neo4j.exceptions import ServiceUnavailable
-import numpy as np
-import matplotlib.pyplot as plt
-from urllib.parse import urlsplit, parse_qs
-from fastapi.middleware.cors import CORSMiddleware
+import logging
+import os
+from urllib.parse import parse_qs, urlsplit
 
-# print('neo4j', neo4j.__version__)
-# print(dir(graphistry))
-# print('graphistry', graphistry.__version__)
-DELETE_EXISTING_DATABASE=False
-POPULATE_DATABASE=False
+import graphistry
+import pandas as pd
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from neo4j import GraphDatabase  # for data loader
+from neo4j.exceptions import ServiceUnavailable
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 load_dotenv()
 uri=os.getenv("uri")
 user=os.getenv("user")
 pwd=os.getenv("pwd")
 personal_key_id=os.getenv("personal_key_id")
 personal_key_secret=os.getenv("personal_key_secret")
-origins = [
-    "http://localhost.tiangolo.com",
-    "https://localhost.tiangolo.com",
-    "http://localhost",
-    "http://localhost:8080",
-]
-
-
+postgres_db=os.getenv("DATABASE_URI")
 
 graphistry.register(api=3,personal_key_id=personal_key_id, personal_key_secret=personal_key_secret, protocol='https', server='hub.graphistry.com')
 NEO4J={'uri':uri, 'auth':(user, pwd)}
@@ -46,18 +29,32 @@ graphistry.register(bolt=NEO4J)
 def connection():
   driver=GraphDatabase.driver(uri=uri,auth=(user,pwd))
   return (driver)
-driver_neo4j=connection()
+
 app = FastAPI()  
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+driver_neo4j=connection()
+engine = create_engine(postgres_db)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+@app.middleware("http")
+async def db_session_middleware(request, call_next):
+    response = JSONResponse(content={"message": "Internal Server Error"}, status_code=500)
+    try:
+        request.state.db = SessionLocal()
+        response = await call_next(request)
+    finally:
+        request.state.db.close()
+    return response
+
 @app.get("/") 
 async def main_route():     
   return {"message": "Hey, Graphistry!!"}
+
+@app.get("/getDropdownValues") 
+async def get_table_data():
+    with engine.connect() as con:
+            rs = con.execute("SELECT * FROM ltd_node_selection_lov")
+            results = [dict(row) for row in rs]
+    return {"data": results}
 
 driver = GraphDatabase.driver(uri, auth=(user,pwd))
 @app.get("/runQuery")

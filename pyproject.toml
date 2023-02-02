@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "neo4j-acc"
+name = "graphistry-fastapi"
 version = "0.1.0"
 description = ""
 authors = ["Jagadeesh Garapati <jagadeesh.garapati.ext@nokia.com>"]
@@ -20,6 +20,10 @@ graphistry="^0.28.6"
 numpy= "1.24.1"
 getenv= "0.2.0"
 igraph="0.10.3"
+sqlalchemy = "^1.3"
+psycopg = "^3.1.8"
+pip = "^23.0"
+psycopg2-binary= "2.9.5"
 
 [build-system]
 requires = ["poetry-core"]
