@@ -79,7 +79,7 @@ def queryGraphistry(cypherQuery="null"):
       'Mediator': 'M',
       'DependentVariable': 'DV'},
                 default_mapping="?"
-            ).plot(render=False)
+            ).addStyle(bg={'color': '#FFFFFF'}).plot(render=False)
         query = urlsplit(shareable_and_embeddable_url).query
         params = parse_qs(query) 
     except ServiceUnavailable as exception:
