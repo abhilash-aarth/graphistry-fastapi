@@ -63,6 +63,7 @@ async def execute_query_builder(node1: str, node2: Optional[str] = None, node3: 
         query = text("SELECT ld_match_query, ld_match_node1, ld_match_node2, ld_match_node3, ld_return_node1, ld_return_node2, ld_return_node3, ld_return_edge1, ld_return_edge2, ld_limit,ld_edge_point_icon FROM ld_query_builder WHERE ld_node1 = :node1  AND (ld_node2 = :node2 OR :node2 IS NULL) AND (ld_node3 = :node3 OR :node3 IS NULL)")
         rs = con.execute(query, {"node1": node1, "node2": node2, "node3": node3})
         query_builder_data = [dict(row) for row in rs]
+        print(query_builder_data)
     if not query_builder_data:
         print(f"No records found for nodes: node1={node1}, node2={node2}, node3={node3}")
         return {}
@@ -178,16 +179,18 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
 
             with driver.session() as session:
                 result = session.run(cypher_query_node1)
-                nodes = pd.DataFrame([r.data() for r in result])
-            with driver.session() as session:
-                result = session.run(cypher_query_edges)
-                edges_r = pd.DataFrame([r.data() for r in result])
-            if nodes.empty:
-                return ("No records found")
-            var_bind=f"{query_builder_data_node[0]['ld_edge_point_icon']}"
-            shareable_and_embeddable_url=graphistry.bind(source="n1", destination="n1",node="id").nodes(nodes).edges(edges_r).addStyle(bg={'color': '#FFFFFF'}).plot(render=False)
-            query = urlsplit(shareable_and_embeddable_url).query
-            params = parse_qs(query) 
+                df = pd.DataFrame([r.data() for r in result], columns=result.keys())
+                edges_r = pd.DataFrame(columns=['n1', 'n2'])
+            nodes = graphistry.bind(source="n1", destination="n2",node="id").nodes(df).edges(edges_r)
+            if nodes is not None:
+                viz = nodes.addStyle(bg={'color': '#FFFFFF'})
+                shareable_and_embeddable_url = viz.plot(render=False)
+                query = urlsplit(shareable_and_embeddable_url).query
+                params = parse_qs(query) 
+            else:
+                msg="No nodes found in the query result."
+                print(msg)
+                return(msg)
 
     except ServiceUnavailable as exception:
         logging.error("Error: {exception}".format(exception=exception))
