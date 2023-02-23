@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from neo4j import GraphDatabase  # for data loader
 from neo4j.exceptions import ServiceUnavailable
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, null, and_
 from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
@@ -60,7 +60,17 @@ driver = GraphDatabase.driver(uri, auth=(user,pwd))
 
 async def execute_query_builder(node1: str, node2: Optional[str] = None, node3: Optional[str] = None) -> dict:
     with engine.connect() as con:
-        query = text("SELECT ld_match_query, ld_match_node1, ld_match_node2, ld_match_node3, ld_return_node1, ld_return_node2, ld_return_node3, ld_return_edge1, ld_return_edge2, ld_limit,ld_edge_point_icon FROM ld_query_builder WHERE ld_node1 = :node1  AND (ld_node2 = :node2 OR :node2 IS NULL) AND (ld_node3 = :node3 OR :node3 IS NULL)")
+        query = f"SELECT ld_match_query, ld_match_node1, ld_match_node2, ld_match_node3, ld_return_node1, ld_return_node2, ld_return_node3, ld_return_edge1, ld_return_edge2, ld_limit, ld_edge_point_icon FROM ld_query_builder WHERE ld_node1 = '{node1}'"
+        if node2 is not None and node2 != "null":
+            query += f" AND ld_node2 = '{node2}'"
+        else:
+            query += " AND ld_node2 =''"
+        if node3 is not None and node3 != "null":
+            query += f" AND ld_node3 = '{node3}'"
+        else:
+            query += " AND ld_node3 =''"
+        query = text(query)
+        print(query)
         rs = con.execute(query, {"node1": node1, "node2": node2, "node3": node3})
         query_builder_data = [dict(row) for row in rs]
         print(query_builder_data)
@@ -73,7 +83,7 @@ async def execute_query_builder(node1: str, node2: Optional[str] = None, node3: 
 @app.get("/buildQuery")
 async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Optional[str] = None, keyword2: Optional[str] = None, node3: Optional[str] = None, keyword3: Optional[str] = None, userId: Optional[str] = None):
     try:
-        if node2 and node3:
+        if node2 and node3!="null":
             print("Found 3 nodes")
             
             # get the query builder data for node1
@@ -82,11 +92,11 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
                 print(f"No query builder data found for nodes: node1={node1}, node2={node2}, node3={node3}")
                 return {}
             cypher_query = f"{query_builder_data_node[0]['ld_match_query']} "
-            if keyword1 is not None:
+            if keyword1 !="null":
                 cypher_query += f"AND {query_builder_data_node[0]['ld_match_node1']}  '{keyword1}'  "
-            if keyword2 is not None:
+            if keyword2 !="null":
                 cypher_query += f"AND {query_builder_data_node[0]['ld_match_node2']}  '{keyword2}'  "
-            if keyword3 is not None:
+            if keyword3 !="null":
                 cypher_query += f"AND {query_builder_data_node[0]['ld_match_node3']}  '{keyword3}'  "
             cypher_query_node1 = cypher_query+f"RETURN {query_builder_data_node[0]['ld_return_node1']} limit  {query_builder_data_node[0]['ld_limit']}"
             cypher_query_node2 = cypher_query+f"RETURN {query_builder_data_node[0]['ld_return_node2']} limit  {query_builder_data_node[0]['ld_limit']}"
@@ -94,9 +104,6 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
             cypher_query_edges1 = cypher_query + f"RETURN {query_builder_data_node[0]['ld_return_edge1']} limit  {query_builder_data_node[0]['ld_limit']}"
             cypher_query_edges2 = cypher_query + f"RETURN {query_builder_data_node[0]['ld_return_edge2']} limit  {query_builder_data_node[0]['ld_limit']}"
             cypher_query_edges = cypher_query_edges1 + f" union " + cypher_query_edges2
-            # print(cypher_query_node1)
-            # print(cypher_query_node2)
-            # print(cypher_query_node3)
             print(cypher_query_edges)
             with driver.session() as session:
                 result = session.run(cypher_query_node1)
@@ -120,7 +127,7 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
             query = urlsplit(shareable_and_embeddable_url).query
             params = parse_qs(query) 
 
-        elif node2 is not None and node3 is None:
+        elif node2 !="null" and node3 =="null":
             print("Found 2 nodes")
             
             # get the query builder data for 2 node
@@ -131,9 +138,9 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
                 return {}
 
             cypher_query = f"{query_builder_data_node[0]['ld_match_query']} "
-            if keyword1 is not None:
+            if keyword1 !="null":
                 cypher_query += f"AND {query_builder_data_node[0]['ld_match_node1']}  '{keyword1}'  "
-            if keyword2 is not None:
+            if keyword2 !="null":
                 cypher_query += f"AND {query_builder_data_node[0]['ld_match_node2']}  '{keyword2}'  "
 
             cypher_query_node1 = cypher_query+f"RETURN {query_builder_data_node[0]['ld_return_node1']} limit  {query_builder_data_node[0]['ld_limit']}"
@@ -159,7 +166,7 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
             query = urlsplit(shareable_and_embeddable_url).query
             params = parse_qs(query) 
 
-        elif node2 is None and node3 is None:
+        elif node2 !="null" and node3 =="null":
             print("Found 1 node")
             
             # get the query builder data for 2 node
@@ -169,7 +176,7 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
                 return {}
 
             cypher_query = f"{query_builder_data_node[0]['ld_match_query']} "
-            if keyword1 is not None:
+            if keyword1 !="null":
                 cypher_query += f"AND {query_builder_data_node[0]['ld_match_node1']}  '{keyword1}'  "
 
             cypher_query_node1 = cypher_query+f"RETURN {query_builder_data_node[0]['ld_return_node1']} limit  {query_builder_data_node[0]['ld_limit']}"
@@ -188,7 +195,7 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
                 query = urlsplit(shareable_and_embeddable_url).query
                 params = parse_qs(query) 
             else:
-                msg="No nodes found in the query result."
+                msg="No records found"
                 print(msg)
                 return(msg)
 
