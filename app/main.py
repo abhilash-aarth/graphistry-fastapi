@@ -13,6 +13,7 @@ from neo4j.exceptions import ServiceUnavailable
 from sqlalchemy import create_engine, text, null, and_
 from sqlalchemy.orm import sessionmaker
 
+
 load_dotenv()
 uri=os.getenv("uri")
 user=os.getenv("user")
@@ -52,7 +53,7 @@ async def main_route():
 @app.get("/getDropdownValues") 
 async def get_table_data():
     with engine.connect() as con:
-            rs = con.execute("SELECT * FROM ltd_node_selection_lov order by id")
+            rs = con.execute("SELECT * FROM ld_node_selection_lov order by id")
             results = [dict(row) for row in rs]
     return {"data": results}
 
@@ -81,9 +82,12 @@ async def execute_query_builder(node1: str, node2: Optional[str] = None, node3: 
 
 
 @app.get("/buildQuery")
-async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Optional[str] = None, keyword2: Optional[str] = None, node3: Optional[str] = None, keyword3: Optional[str] = None, userId: Optional[str] = None):
+async def queryGraphistry(node1: str, keyword1: Optional[str] = "null", node2: Optional[str] = "null", keyword2: Optional[str] = "null", node3: Optional[str] = "null", keyword3: Optional[str] = "null", userId: Optional[str] = "null"):
     try:
-        if node2 and node3!="null":
+        keyword1 = keyword1.lower() if keyword1 != "null" else keyword1
+        keyword2 = keyword2.lower() if keyword2 != "null" else keyword2
+        keyword3 = keyword3.lower() if keyword3 != "null" else keyword3
+        if node2!="null" and node3!="null":
             print("Found 3 nodes")
             
             # get the query builder data for node1
@@ -120,12 +124,15 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
                 edges_r = pd.DataFrame([r.data() for r in result])
  
             if nodes.empty:
-                return ("No records found")
+                msg= "No records found"
+                await insert_query_history(user_id=userId, node1=node1, keyword1=keyword1, node2=node2, keyword2=keyword2,node3=node3,keyword3=keyword3, error_message=msg)  
+                return (msg)
             var_bind=f"{query_builder_data_node[0]['ld_edge_point_icon']}"
 
             shareable_and_embeddable_url=graphistry.bind(source="n1", destination="n2",node="id").nodes(nodes).edges(edges_r).encode_point_icon('ConstructRole', shape="circle",as_text=True,categorical_mapping={'Moderator': 'MV', 'IndependentVariable': 'IV', 'Mediator': 'M','DependentVariable': 'DV'},default_mapping="?").addStyle(bg={'color': '#FFFFFF'}).plot(render=False)
             query = urlsplit(shareable_and_embeddable_url).query
-            params = parse_qs(query) 
+            params = parse_qs(query)
+            await insert_query_history(user_id=userId, node1=node1, keyword1=keyword1, node2=node2, keyword2=keyword2,node3=node3,keyword3=keyword3,dataset=params['dataset'] )   
 
         elif node2 !="null" and node3 =="null":
             print("Found 2 nodes")
@@ -160,20 +167,25 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
                 result = session.run(cypher_query_edges)
                 edges_r = pd.DataFrame([r.data() for r in result])
             if nodes.empty:
-                return ("No records found")
+                msg="No records found"
+                await insert_query_history(user_id=userId, node1=node1, keyword1=keyword1, node2=node2, keyword2=keyword2, error_message=msg)  
+                return (msg)
             var_bind=f"{query_builder_data_node[0]['ld_edge_point_icon']}"
             shareable_and_embeddable_url=graphistry.bind(source="n1", destination="n2",node="id").nodes(nodes).edges(edges_r).addStyle(bg={'color': '#FFFFFF'}).plot(render=False)
             query = urlsplit(shareable_and_embeddable_url).query
-            params = parse_qs(query) 
+            params = parse_qs(query)
+            await insert_query_history(user_id=userId, node1=node1, keyword1=keyword1, node2=node2, keyword2=keyword2, dataset=params['dataset'])  
 
-        elif node2 !="null" and node3 =="null":
+        elif node2 =="null" and node3 =="null":
             print("Found 1 node")
             
             # get the query builder data for 2 node
             query_builder_data_node = await execute_query_builder(node1)
             if not query_builder_data_node:
-                print(f"No query builder data found for node: node1={node1}")
-                return {}
+                msg=f"No query builder data found for node: node1={node1}"
+                print(msg)
+                await insert_query_history(user_id=userId, node1=node1, keyword1=keyword1,error_message=msg) 
+                return msg
 
             cypher_query = f"{query_builder_data_node[0]['ld_match_query']} "
             if keyword1 !="null":
@@ -193,10 +205,12 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = None, node2: Opt
                 viz = nodes.addStyle(bg={'color': '#FFFFFF'})
                 shareable_and_embeddable_url = viz.plot(render=False)
                 query = urlsplit(shareable_and_embeddable_url).query
-                params = parse_qs(query) 
+                params = parse_qs(query)
+                await insert_query_history(user_id=userId, node1=node1, keyword1=keyword1,dataset=params['dataset']) 
             else:
                 msg="No records found"
                 print(msg)
+                await insert_query_history(user_id=userId, node1=node1, keyword1=keyword1,error_message=msg) 
                 return(msg)
 
     except ServiceUnavailable as exception:
@@ -276,3 +290,23 @@ async def get_allQueries():
         response["query2"] = res3
     json_results = json.dumps(response)
     return json_results
+
+async def insert_query_history(user_id: str, node1: str, keyword1: Optional[str] = None, node2: Optional[str] = None, keyword2: Optional[str] = None, node3: Optional[str] = None, keyword3: Optional[str] = None,dataset:Optional[str] = None ,status:Optional[str] = None ,error_message:Optional[str] = None) -> None:
+    with engine.connect() as con:
+        query = """
+            INSERT INTO ld_user_build_query_log (user_id, node1, keyword1, node2, keyword2, node3, keyword3, dataset, status, error_message)   
+            VALUES (:user_id, :node1, :keyword1, :node2, :keyword2, :node3, :keyword3, :dataset, :status, :error_message)
+        """
+        con.execute(
+            text(query),
+            user_id=user_id,
+            node1=node1,
+            keyword1=keyword1,
+            node2=node2,
+            keyword2=keyword2,
+            node3=node3,
+            keyword3=keyword3,
+            dataset=dataset,
+            status=status,
+            error_message=error_message
+        )
