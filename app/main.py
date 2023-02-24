@@ -1,5 +1,6 @@
 import json
 import logging
+import queries
 import os
 from urllib.parse import parse_qs, urlsplit
 from typing import Optional
@@ -209,53 +210,17 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = "null", node2: O
         raise
     return params['dataset']
 
-query1 = """CALL apoc.meta.stats() YIELD labels
-RETURN labels.JournalPublication as Journals, labels.JournalReference as Papers, labels.Publisher as Publishers, labels.Affiliation as Affiliations, labels.Hypothesis as Hypotheses, labels.Author as Authors, labels.Construct as Constructs"""
-
-query2 = """MATCH (ref:JournalReference)-[:APPEARED_IN]->(pub:JournalPublication)
-WHERE '1981'> ref.year<= '1990'
-    with pub.name as `Journal Name`, "1980-1990" as Years, count(ref) as `No.Of Papers`
-RETURN `Journal Name`, Years, `No.Of Papers`
-UNION ALL
-MATCH (ref:JournalReference)-[:APPEARED_IN]->(pub:JournalPublication)
-WHERE '1991'> ref.year<= '2000'
-    with pub.name as `Journal Name`, "1991-2000" as Years, count(ref) as `No.Of Papers`
-RETURN `Journal Name`, Years, `No.Of Papers`
-UNION ALL
-MATCH (ref:JournalReference)-[:APPEARED_IN]->(pub:JournalPublication)
-WHERE '2001'> ref.year<= '2010'
-    with pub.name as `Journal Name`, "2001-2010" as Years, count(ref) as `No.Of Papers`
-RETURN `Journal Name`, Years, `No.Of Papers`
-UNION ALL
-MATCH (ref:JournalReference)-[:APPEARED_IN]->(pub:JournalPublication)
-WHERE '2011'> ref.year<= '2020'
-    with pub.name as `Journal Name`, "2011-2020" as Years, count(ref) as `No.Of Papers`
-RETURN `Journal Name`, Years, `No.Of Papers`
-UNION ALL
-MATCH (ref:JournalReference)-[:APPEARED_IN]->(pub:JournalPublication)
-WHERE '2020'> ref.year<= '2023'
-    with pub.name as `Journal Name`, "2020-2023" as Years, count(ref) as `No.Of Papers`
-RETURN `Journal Name`, Years, `No.Of Papers`
-"""
-
-query3 = """MATCH (c:Construct)-[r:AS]->(cr:`Construct Role`)
-WITH c.ConstructRole as role, count(c) as count
-MATCH (c2:Construct)
-WITH count, role, count(c2) as total
-RETURN role, count, toFloat(count) / toFloat(total) * 100 as percentage
-"""
-
 response = dict()
 
 @app.get("/dashboardQuery/{queryNo}")
 async def get_query(queryNo):
 
 	if queryNo == "1":
-		query = query1
+		query = queries.query1
 	elif queryNo == "2":
-		query = query2
+		query = queries.query2
 	elif queryNo == "3":
-		query = query3
+		query = queries.query3
 	with driver.session() as session:
 		info = session.run(query)
 		res = info.data()
@@ -268,17 +233,17 @@ response = dict()
 @app.get("/dashboardQuery")
 async def get_allQueries():
     with driver.session() as session:
-        info = session.run(query1)
+        info = session.run(queries.query1)
         res1 = info.data()
         response["query1"] = res1
 
-        info = session.run(query2)
+        info = session.run(queries.query2)
         res2 = info.data()
         response["query2"] = res2
 
-        info = session.run(query3)
+        info = session.run(queries.query3)
         res3 = info.data()
-        response["query2"] = res3
+        response["query3"] = res3
     json_results = json.dumps(response)
     return json_results
 
