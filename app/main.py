@@ -149,16 +149,14 @@ async def queryGraphistry(node1: str, keyword1: Optional[str] = "null", node2: O
             print(cypher_query_node1)
             print(cypher_query_node2)
             print(cypher_query_edges)
+            
             with driver.session() as session:
-                result = session.run(cypher_query_node1)
-                node1 = pd.DataFrame([r.data() for r in result])
-            with driver.session() as session:
-                result = session.run(cypher_query_node2)
-                node2 = pd.DataFrame([r.data() for r in result])
-            nodes=pd.concat([node1, node2])
-            with driver.session() as session:
+                node_queries = [cypher_query_node1, cypher_query_node2]
+                nodes = pd.concat([pd.DataFrame([r.data() for r in session.run(q)]) for q in node_queries])
+		
                 result = session.run(cypher_query_edges)
                 edges_r = pd.DataFrame([r.data() for r in result])
+		
             if nodes.empty:
                 msg="No records found"
                 await insert_query_history(user_id=userId, node1=node1, keyword1=keyword1, node2=node2, keyword2=keyword2, error_message=msg)  
